@@ -58,7 +58,7 @@ export function Sidebar() {
               <GraduationCap className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-lg bg-gradient-to-r from-primary to-education-600 bg-clip-text text-transparent">
-              EduPlatform
+              ByteLearn
             </span>
           </div>
         )}
@@ -111,14 +111,11 @@ export function Sidebar() {
               )}
             >
               <span className="text-sm">
-                {user.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
+                {user.username}
               </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
+              <p className="text-sm font-medium truncate">{user.username}</p>
               <p
                 className={cn(
                   "text-xs font-medium capitalize",

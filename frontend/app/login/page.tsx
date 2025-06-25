@@ -16,7 +16,7 @@ import type { UserRole } from "@/types"
 import Link from "next/link"
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("")
+  const [username, setUserName] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<UserRole>("student")
   const [error, setError] = useState("")
@@ -30,7 +30,7 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const success = await login(email, password, role)
+      const success = await login(username, password, role)
       if (success) {
         router.push("/dashboard")
       } else {
@@ -76,13 +76,13 @@ export default function LoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">User Name</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                id="username"
+                type="test"
+                placeholder="Enter your username"
+                value={username}
+                onChange={(e) => setUserName(e.target.value)}
                 required
               />
             </div>

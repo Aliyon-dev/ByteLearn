@@ -8,7 +8,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "EduPlatform - Sustainable Learning System",
+  title: "ByteLearn - Sustainable Learning System",
   description: "On-premise student learning management system",
     generator: 'v0.dev'
 }

@@ -18,7 +18,7 @@ export function Header() {
     <header className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-background via-background to-primary/5 border-b backdrop-blur-sm">
       <div className="flex items-center space-x-4">
         <h1 className="text-xl font-semibold bg-gradient-to-r from-foreground to-primary bg-clip-text text-transparent">
-          Welcome back, {user.name.split(" ")[0]}!
+          Welcome back, {user.username}!
         </h1>
       </div>
 
@@ -52,10 +52,7 @@ export function Header() {
                 )}
               >
                 <span className="text-sm">
-                  {user.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {user.name}
                 </span>
               </div>
             </Button>

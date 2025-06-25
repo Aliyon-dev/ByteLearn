@@ -5,10 +5,13 @@ import type { User, UserRole } from "@/types"
 import { mockUsers } from "@/lib/mock-data"
 import { headers } from "next/headers"
 
+import axios from "axios"
+
 interface AuthContextType {
   user: User | null
   login: (email: string, password: string, role: UserRole) => Promise<boolean>
   logout: () => void
+  Register: (formData: any) => Promise<boolean>
   isLoading: boolean
 }
 
@@ -27,17 +30,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = async (email: string, password: string, role: UserRole): Promise<boolean> => {
-
-    // Mock authentication - in real app, this would call your backend
-    const foundUser = mockUsers.find((u) => u.email === email && u.role === role)
-
-    if (foundUser) {
-      setUser(foundUser)
-      localStorage.setItem("user", JSON.stringify(foundUser))
-      return true
+const login = async (username: string, password: string, role: string) => {
+  try {
+    const response = await axios.post("http://127.0.0.1:8000/api/auth/login/", {username, password, role});
+    if (response.status === 200) {
+      console.log(response.data.user);
+      setUser(response.data.user);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+      return true;
     }
+    return false;
+  } catch (err) {
+    console.error("Login error:", err);
+    return false;
+  }
+};
 
+
+  const Register = async (formData: any): Promise<boolean> => {
+    try{
+      const response = await axios.post('http://127.0.0.1:8000/api/auth/register/', {formData});
+      if(response){
+        setUser(response.data.user)
+        localStorage.setItem("user", JSON.stringify(response.data.user))
+        return true
+      }
+    }
+    catch(error){
+      console.log(error);
+    }
     return false
   }
 
@@ -46,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("user")
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, logout, isLoading, Register }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
