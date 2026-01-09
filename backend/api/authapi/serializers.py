@@ -7,10 +7,12 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
     role = serializers.ChoiceField(choices=Profile.USER_ROLES, default='student')
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
 
     class Meta:
         model = User
-        fields = ('username', 'email', 'password', 'password2', 'role')
+        fields = ('username', 'email', 'password', 'password2', 'role', 'first_name', 'last_name')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
