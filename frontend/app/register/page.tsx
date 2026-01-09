@@ -12,10 +12,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { GraduationCap } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
-import { register } from "module"
 
 export default function RegisterPage() {
-  const {Register} = useAuth()
+  const { Register } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -41,17 +40,19 @@ export default function RegisterPage() {
     try{
       const response = await Register(formData);
       if(response){
-        router.push('/dashboard');
+        router.push('/login');
         setIsLoading(false);
       }
       else{
         setError("Error while creating account")
+        setIsLoading(false);
       }
 
     }
     catch(error: String | any){
       console.log(error);
-      setError(error)
+      setError(error.message || "An error occurred")
+      setIsLoading(false);
     }
   }
 

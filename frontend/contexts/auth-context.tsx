@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { User, UserRole } from "@/types"
-import { mockUsers } from "@/lib/mock-data"
 import { headers } from "next/headers"
 
 import axios from "axios"
@@ -49,10 +48,21 @@ const login = async (username: string, password: string, role: string) => {
 
   const Register = async (formData: any): Promise<boolean> => {
     try{
-      const response = await axios.post('http://127.0.0.1:8000/api/auth/register/', {formData});
-      if(response){
-        setUser(response.data.user)
-        localStorage.setItem("user", JSON.stringify(response.data.user))
+        const payload = {
+            username: formData.studentId, // Mapping studentId to username
+            email: formData.email,
+            password: formData.password,
+            password2: formData.confirmPassword, // Ensure this matches backend serializer field
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            role: 'student' // Defaulting to student for this form
+        };
+      const response = await axios.post('http://127.0.0.1:8000/api/auth/register/', payload);
+      if(response.status === 201){
+        // setUser(response.data.user) // Usually registration doesn't auto-login or return user object in the same way, but if it does, uncomment.
+        // For now, let's assume we redirect to login, or if the backend returns tokens we could auto-login.
+        // The backend returns: { message, refresh, access } but not the full user object immediately usable for context unless we decode it or fetch profile.
+        // Ideally, we redirect to login page.
         return true
       }
     }
