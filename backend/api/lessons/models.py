@@ -1,11 +1,14 @@
 from django.db import models
+from api.courses.models import Course
 
 class Lesson(models.Model):
-    course_id = models.CharField(max_length=255) # Assuming simplified linking for now, or could be FK to Course
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='lessons', null=True)
+    # course_id removed to avoid clash with ForeignKey field name (which creates course_id column)
     title = models.CharField(max_length=255)
     description = models.TextField()
     content = models.TextField() # Markdown content
-    video_path = models.CharField(max_length=255, blank=True, null=True)
+    video_path = models.CharField(max_length=255, blank=True, null=True) # Deprecated or used for external links
+    video_file = models.FileField(upload_to='videos/', blank=True, null=True)
     duration = models.IntegerField(default=0) # in minutes
     order = models.IntegerField(default=0)
 

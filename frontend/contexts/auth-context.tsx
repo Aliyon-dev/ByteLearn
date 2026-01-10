@@ -2,13 +2,12 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { User, UserRole } from "@/types"
-import { headers } from "next/headers"
-
-import axios from "axios"
+import api from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 interface AuthContextType {
   user: User | null
-  login: (email: string, password: string, role: UserRole) => Promise<boolean>
+  login: (username: string, password: string, role: UserRole, otp?: string) => Promise<{ success: boolean; mfaRequired?: boolean; message?: string }>
   logout: () => void
   Register: (formData: any) => Promise<boolean>
   isLoading: boolean
@@ -19,50 +18,69 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     // Check for stored user session
     const storedUser = localStorage.getItem("user")
-    if (storedUser) {
+    const accessToken = localStorage.getItem("access_token")
+    if (storedUser && accessToken) {
       setUser(JSON.parse(storedUser))
     }
     setIsLoading(false)
   }, [])
 
-const login = async (username: string, password: string, role: string) => {
-  try {
-    const response = await axios.post("http://127.0.0.1:8000/api/auth/login/", {username, password, role});
-    if (response.status === 200) {
-      console.log(response.data.user);
-      setUser(response.data.user);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
-      return true;
+  const login = async (username: string, password: string, role: string, otp?: string) => {
+    try {
+      const payload: any = { username, password, role };
+      if (otp) {
+        payload.otp = otp;
+      }
+
+      const response = await api.post("auth/login/", payload);
+
+      if (response.status === 200) {
+        if (response.data.mfa_required) {
+          return { success: false, mfaRequired: true, message: response.data.message };
+        }
+
+        const userData = response.data.user;
+        const accessToken = response.data.access;
+        const refreshToken = response.data.refresh;
+
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("refresh_token", refreshToken);
+
+        return { success: true };
+      }
+      return { success: false, message: "Invalid credentials" };
+    } catch (err: any) {
+      console.error("Login error:", err);
+      // Check for 401
+      if (err.response && err.response.status === 401) {
+          return { success: false, message: err.response.data.message || "Invalid credentials" };
+      }
+      return { success: false, message: "An error occurred" };
     }
-    return false;
-  } catch (err) {
-    console.error("Login error:", err);
-    return false;
-  }
-};
+  };
 
 
   const Register = async (formData: any): Promise<boolean> => {
     try{
         const payload = {
-            username: formData.studentId, // Mapping studentId to username
+            username: formData.studentId, // Using studentID as username
             email: formData.email,
             password: formData.password,
-            password2: formData.confirmPassword, // Ensure this matches backend serializer field
+            password2: formData.confirmPassword,
             first_name: formData.firstName,
             last_name: formData.lastName,
-            role: 'student' // Defaulting to student for this form
+            studentId: formData.studentId,
+            role: 'student'
         };
-      const response = await axios.post('http://127.0.0.1:8000/api/auth/register/', payload);
+      const response = await api.post('auth/register/', payload);
       if(response.status === 201){
-        // setUser(response.data.user) // Usually registration doesn't auto-login or return user object in the same way, but if it does, uncomment.
-        // For now, let's assume we redirect to login, or if the backend returns tokens we could auto-login.
-        // The backend returns: { message, refresh, access } but not the full user object immediately usable for context unless we decode it or fetch profile.
-        // Ideally, we redirect to login page.
         return true
       }
     }
@@ -75,6 +93,9 @@ const login = async (username: string, password: string, role: string) => {
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("refresh_token")
+    router.push("/login")
   }
 
   return <AuthContext.Provider value={{ user, login, logout, isLoading, Register }}>{children}</AuthContext.Provider>

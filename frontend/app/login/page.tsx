@@ -30,11 +30,23 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const success = await login(username, password, role)
-      if (success) {
+      const result = await login(username, password, role)
+
+      if (result.success) {
         router.push("/dashboard")
+      } else if (result.mfaRequired) {
+        // Redirect to 2FA page with username/password/role implicitly or passed
+        // For security, passing via state/query is risky.
+        // Better: store in a temp context or pass via query params but base64 encoded?
+        // Let's pass via query params for simplicity, realizing it's not perfect security
+        // but password should be re-entered or cached in memory.
+        // Or better: The Login function handled the first step.
+        // The 2FA page needs these creds to call login again WITH OTP.
+        // We can pass them in URL params (bad practice) or sessionStorage.
+        sessionStorage.setItem('temp_login_creds', JSON.stringify({ username, password, role }));
+        router.push("/2fa");
       } else {
-        setError("Invalid credentials. Please try again.")
+        setError(result.message || "Invalid credentials. Please try again.")
       }
     } catch (err) {
       setError("An error occurred. Please try again.")

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,27 +10,49 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Shield } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function TwoFactorPage() {
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { login } = useAuth()
+  const [creds, setCreds] = useState<any>(null)
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem('temp_login_creds')
+    if (stored) {
+      setCreds(JSON.parse(stored))
+    } else {
+      router.push('/login')
+    }
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
-    // Mock 2FA verification
-    setTimeout(() => {
-      if (code === "123456") {
+    if (!creds) {
+      setError("Session expired. Please login again.")
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const result = await login(creds.username, creds.password, creds.role, code)
+      if (result.success) {
+        sessionStorage.removeItem('temp_login_creds')
         router.push("/dashboard")
       } else {
-        setError("Invalid verification code. Please try again.")
+        setError(result.message || "Invalid verification code.")
       }
-      setIsLoading(false)
-    }, 1000)
+    } catch (e) {
+       setError("An error occurred.")
+    } finally {
+       setIsLoading(false)
+    }
   }
 
   return (
@@ -69,10 +91,6 @@ export default function TwoFactorPage() {
               {isLoading ? "Verifying..." : "Verify Code"}
             </Button>
           </form>
-
-          <div className="mt-4 text-center">
-            <p className="text-sm text-muted-foreground">Demo code: 123456</p>
-          </div>
         </CardContent>
       </Card>
     </div>

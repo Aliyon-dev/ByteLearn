@@ -1,29 +1,72 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { mockCodeExercises, mockCourses } from "@/lib/mock-data"
 import { ArrowLeft, Play, RotateCcw, CheckCircle } from "lucide-react"
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
+import api from "@/lib/api"
+
+// Simple type definitions for data we expect
+interface Exercise {
+    id: number;
+    title: string;
+    description: string;
+    starter_code: string;
+    solution: string;
+    test_cases: any[];
+    language: string;
+    course: number;
+}
+
+interface Course {
+    id: number;
+    title: string;
+}
 
 export default function CodingExercisePage() {
   const params = useParams()
   const courseId = params.id as string
   const exerciseId = params.exerciseId as string
 
-  const exercise = mockCodeExercises.find((e) => e.id === exerciseId && e.courseId === courseId)
-  const course = mockCourses.find((c) => c.id === courseId)
+  const [exercise, setExercise] = useState<Exercise | null>(null)
+  const [course, setCourse] = useState<Course | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const [code, setCode] = useState(exercise?.starterCode || "")
+  const [code, setCode] = useState("")
   const [output, setOutput] = useState("")
   const [isRunning, setIsRunning] = useState(false)
-  const [language, setLanguage] = useState(exercise?.language || "python")
+  const [language, setLanguage] = useState("python")
+
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            const [exRes, courseRes] = await Promise.all([
+                api.get(`courses/exercises/${exerciseId}/`),
+                api.get(`courses/courses/${courseId}/`)
+            ]);
+            setExercise(exRes.data);
+            setCourse(courseRes.data);
+            setCode(exRes.data.starter_code);
+            setLanguage(exRes.data.language);
+        } catch (e) {
+            console.error("Failed to fetch exercise data", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+  }, [courseId, exerciseId]);
+
+
+  if (loading) {
+     return <DashboardLayout><div>Loading...</div></DashboardLayout>
+  }
 
   if (!exercise || !course) {
     return (
@@ -42,21 +85,27 @@ export default function CodingExercisePage() {
     setIsRunning(true)
     setOutput("Running code...")
 
-    // Mock code execution
-    setTimeout(() => {
-      setOutput("Hello, World!\n\nCode executed successfully!")
-      setIsRunning(false)
-    }, 2000)
+    try {
+        const res = await api.post('courses/execute/', {
+            code: code,
+            language: language
+        });
+        setOutput(res.data.output);
+    } catch (e: any) {
+        setOutput(e.response?.data?.error || "Error running code");
+    } finally {
+        setIsRunning(false);
+    }
   }
 
   const handleReset = () => {
-    setCode(exercise.starterCode)
+    setCode(exercise.starter_code)
     setOutput("")
   }
 
   const handleSubmit = () => {
-    // Mock submission
-    setOutput("✅ All test cases passed!\n\nGreat job! Your solution is correct.")
+    // Basic mock submission for now
+    setOutput("Submission functionality not fully implemented yet. Please use 'Run Code' to verify your solution against test cases manually.");
   }
 
   return (
@@ -88,11 +137,11 @@ export default function CodingExercisePage() {
             <CardContent className="space-y-4">
               <p className="text-sm">{exercise.description}</p>
 
-              {exercise.testCases.length > 0 && (
+              {exercise.test_cases.length > 0 && (
                 <div>
                   <h4 className="font-semibold mb-2">Test Cases:</h4>
                   <div className="space-y-2">
-                    {exercise.testCases.map((testCase, index) => (
+                    {exercise.test_cases.map((testCase, index) => (
                       <div key={index} className="bg-muted p-3 rounded-lg text-sm">
                         <div>
                           <strong>Input:</strong> {testCase.input || "None"}
@@ -124,7 +173,7 @@ export default function CodingExercisePage() {
                 <div className="flex items-center justify-between">
                   <CardTitle>Code Editor</CardTitle>
                   <div className="flex items-center space-x-2">
-                    <Select value={language} onValueChange={setLanguage}>
+                    <Select value={language} onValueChange={setLanguage} disabled={true}>
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>

@@ -23,5 +23,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         role = validated_data.pop('role')
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
-        Profile.objects.create(user=user, role=role)
+
+        # Profile might be created by signals in some setups, but here we do it explicitly if it doesn't exist
+        # Check if profile already exists (e.g. from signal)
+        if not hasattr(user, 'profile'):
+             Profile.objects.create(user=user, role=role)
+        else:
+             user.profile.role = role
+             user.profile.save()
+
         return user
