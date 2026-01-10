@@ -9,3 +9,15 @@ class Course(models.Model):
 
     def __str__(self):
         return self.title
+
+class CodingExercise(models.Model):
+    course = models.ForeignKey(Course, related_name='exercises', on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    starter_code = models.TextField()
+    solution = models.TextField(blank=True) # Hidden from student
+    test_cases = models.JSONField(default=list) # [{'input': '...', 'output': '...'}]
+    language = models.CharField(max_length=50, default='python')
+
+    def __str__(self):
+        return self.title

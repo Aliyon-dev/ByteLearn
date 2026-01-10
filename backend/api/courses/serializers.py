@@ -1,11 +1,13 @@
 from rest_framework import serializers
-from .models import Course
+from .models import Course, CodingExercise
 
 class CourseSerializer(serializers.ModelSerializer):
-    instructor_username = serializers.ReadOnlyField(source='instructor.username')
-
     class Meta:
         model = Course
-        fields = ['id', 'title', 'description', 'instructor', 'instructor_username', 'created_at']
-        read_only_fields = ['instructor', 'created_at']
+        fields = '__all__'
+        read_only_fields = ('instructor', 'created_at')
 
+class CodingExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CodingExercise
+        fields = '__all__'
