@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null
   login: (username: string, password: string, role: UserRole, otp?: string) => Promise<{ success: boolean; mfaRequired?: boolean; message?: string }>
   logout: () => void
-  Register: (formData: any) => Promise<boolean>
+  register: (formData: any) => Promise<{ success: boolean; message?: string }>
   isLoading: boolean
 }
 
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
-  const login = async (username: string, password: string, role: string, otp?: string) => {
+  const login = async (username: string, password: string, role: UserRole, otp?: string) => {
     try {
       const payload: any = { username, password, role };
       if (otp) {
@@ -67,27 +67,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
 
-  const Register = async (formData: any): Promise<boolean> => {
-    try{
-        const payload = {
-            username: formData.studentId, // Using studentID as username
-            email: formData.email,
-            password: formData.password,
-            password2: formData.confirmPassword,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            studentId: formData.studentId,
-            role: 'student'
-        };
+  const register = async (formData: any): Promise<{ success: boolean; message?: string }> => {
+    try {
+      const payload = {
+        username: formData.studentId, // Using studentID as username
+        email: formData.email,
+        password: formData.password,
+        password2: formData.confirmPassword,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        studentId: formData.studentId,
+        role: 'student'
+      };
+      
       const response = await api.post('auth/register/', payload);
-      if(response.status === 201){
-        return true
+      
+      if (response.status === 201) {
+        return { success: true, message: "Registration successful" };
       }
+      
+      return { success: false, message: "Registration failed" };
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      const message = error.response?.data?.message || error.response?.data?.error || "An error occurred during registration";
+      return { success: false, message };
     }
-    catch(error){
-      console.log(error);
-    }
-    return false
   }
 
   const logout = () => {
@@ -98,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push("/login")
   }
 
-  return <AuthContext.Provider value={{ user, login, logout, isLoading, Register }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, login, logout, isLoading, register }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
