@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { mockCourses } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { transformCourse } from "@/lib/data-transform"
+import type { Course } from "@/types"
+import api from "@/lib/api"
 import { BookOpen, Users, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -16,27 +19,37 @@ import Image from "next/image"
 export default function CoursesPage() {
   const { user } = useAuth()
   const [searchTerm, setSearchTerm] = useState("")
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filteredCourses = mockCourses.filter(
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+        const response = await api.get("courses/courses/")
+        const backendCourses = Array.isArray(response.data) ? response.data : response.data.results || []
+        const transformedCourses = backendCourses.map(transformCourse)
+        setCourses(transformedCourses)
+      } catch (err: any) {
+        console.error("Failed to fetch courses:", err)
+        setError(err.response?.data?.message || "Failed to load courses")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (user) {
+      fetchCourses()
+    }
+  }, [user])
+
+  const filteredCourses = courses.filter(
     (course) =>
       course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       course.description.toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
-  const getCoursesForUser = () => {
-    switch (user?.role) {
-      case "student":
-        return filteredCourses.filter((course) => course.progress !== undefined)
-      case "instructor":
-        return filteredCourses.filter((course) => course.instructor.role === "instructor")
-      case "admin":
-        return filteredCourses
-      default:
-        return []
-    }
-  }
-
-  const courses = getCoursesForUser()
 
   return (
     <DashboardLayout>

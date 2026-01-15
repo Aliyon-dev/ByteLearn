@@ -1,18 +1,54 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { mockCourses, mockNotifications } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Course } from "@/types"
+import api from "@/lib/api"
 import { BookOpen, Clock, Trophy, TrendingUp, Plus, Bell } from "lucide-react"
 import Link from "next/link"
 
 function StudentDashboard() {
-  const enrolledCourses = mockCourses.filter((course) => course.progress !== undefined)
-  const recentNotifications = mockNotifications.slice(0, 3)
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get("courses/courses/")
+        const backendCourses = Array.isArray(response.data) ? response.data : response.data.results || []
+        setCourses(backendCourses.map((c: any) => ({
+          id: c.id.toString(),
+          title: c.title,
+          description: c.description,
+          instructor: { id: c.instructor.toString(), username: "instructor", email: "", role: "instructor", createdAt: "" },
+          enrolledStudents: 0,
+          totalLessons: 0,
+          createdAt: c.created_at,
+          updatedAt: c.created_at,
+        })))
+      } catch (err) {
+        console.error("Failed to fetch courses:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCourses()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -25,13 +61,13 @@ function StudentDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="interactive-card border-0 shadow-lg bg-gradient-to-br from-student-50 to-student-100/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-student-700">Enrolled Courses</CardTitle>
+            <CardTitle className="text-sm font-medium text-student-700">Available Courses</CardTitle>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-student-500 to-student-600 flex items-center justify-center">
               <BookOpen className="h-4 w-4 text-white" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-student-700">{enrolledCourses.length}</div>
+            <div className="text-2xl font-bold text-student-700">{courses.length}</div>
           </CardContent>
         </Card>
 
@@ -43,7 +79,7 @@ function StudentDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-education-700">24.5</div>
+            <div className="text-2xl font-bold text-education-700">-</div>
           </CardContent>
         </Card>
 
@@ -55,7 +91,7 @@ function StudentDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-warning-700">2</div>
+            <div className="text-2xl font-bold text-warning-700">-</div>
           </CardContent>
         </Card>
 
@@ -67,93 +103,83 @@ function StudentDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-success-700">87%</div>
+            <div className="text-2xl font-bold text-success-700">-</div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Continue Learning */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-primary/5">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded bg-gradient-to-r from-primary to-education-600 flex items-center justify-center">
-                <BookOpen className="h-4 w-4 text-white" />
-              </div>
-              <span>Continue Learning</span>
-            </CardTitle>
-            <CardDescription>Pick up where you left off</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {enrolledCourses.map((course) => (
+      {/* Available Courses */}
+      <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-primary/5">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <div className="w-6 h-6 rounded bg-gradient-to-r from-primary to-education-600 flex items-center justify-center">
+              <BookOpen className="h-4 w-4 text-white" />
+            </div>
+            <span>Available Courses</span>
+          </CardTitle>
+          <CardDescription>Start learning today</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {courses.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No courses available yet.</p>
+          ) : (
+            courses.map((course) => (
               <div key={course.id} className="flex items-center space-x-4">
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <BookOpen className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium leading-none">{course.title}</p>
-                  <div className="flex items-center space-x-2">
-                    <Progress value={course.progress} className="flex-1" />
-                    <span className="text-xs text-muted-foreground">{course.progress}%</span>
-                  </div>
+                  <p className="text-xs text-muted-foreground line-clamp-1">{course.description}</p>
                 </div>
                 <Link href={`/courses/${course.id}`}>
-                  <Button size="sm">Continue</Button>
+                  <Button size="sm">View</Button>
                 </Link>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Recent Notifications */}
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-card to-muted/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="w-6 h-6 rounded bg-gradient-to-r from-primary to-education-600 flex items-center justify-center">
-                <Bell className="h-4 w-4 text-white" />
-              </div>
-              <span>Recent Notifications</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentNotifications.map((notification) => (
-              <div key={notification.id} className="flex items-start space-x-3">
-                <div
-                  className={`w-2 h-2 rounded-full mt-2 ${
-                    notification.type === "success"
-                      ? "bg-green-500"
-                      : notification.type === "warning"
-                        ? "bg-yellow-500"
-                        : notification.type === "error"
-                          ? "bg-red-500"
-                          : "bg-blue-500"
-                  }`}
-                />
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{notification.title}</p>
-                  <p className="text-xs text-muted-foreground">{notification.message}</p>
-                </div>
-                {!notification.read && (
-                  <Badge variant="secondary" className="text-xs">
-                    New
-                  </Badge>
-                )}
-              </div>
-            ))}
-            <Link href="/notifications">
-              <Button variant="outline" size="sm" className="w-full">
-                View All Notifications
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
 
 function InstructorDashboard() {
-  const myCourses = mockCourses.filter((course) => course.instructor.role === "instructor")
+  const [courses, setCourses] = useState<Course[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await api.get("courses/courses/")
+        const backendCourses = Array.isArray(response.data) ? response.data : response.data.results || []
+        setCourses(backendCourses.map((c: any) => ({
+          id: c.id.toString(),
+          title: c.title,
+          description: c.description,
+          instructor: { id: c.instructor.toString(), username: "instructor", email: "", role: "instructor", createdAt: "" },
+          enrolledStudents: 0,
+          totalLessons: 0,
+          createdAt: c.created_at,
+          updatedAt: c.created_at,
+        })))
+      } catch (err) {
+        console.error("Failed to fetch courses:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchCourses()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -178,7 +204,7 @@ function InstructorDashboard() {
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{myCourses.length}</div>
+            <div className="text-2xl font-bold">{courses.length}</div>
           </CardContent>
         </Card>
         <Card>
@@ -188,7 +214,7 @@ function InstructorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {myCourses.reduce((sum, course) => sum + course.enrolledStudents, 0)}
+              {courses.reduce((sum: number, course: Course) => sum + course.enrolledStudents, 0)}
             </div>
           </CardContent>
         </Card>
@@ -221,7 +247,7 @@ function InstructorDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {myCourses.map((course) => (
+            {courses.map((course: Course) => (
               <Card key={course.id}>
                 <CardContent className="p-4">
                   <div className="space-y-2">

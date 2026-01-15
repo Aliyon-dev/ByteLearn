@@ -1,18 +1,60 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { mockCourses, mockProgress, mockAssessments } from "@/lib/mock-data"
+import { Skeleton } from "@/components/ui/skeleton"
+import type { Course } from "@/types"
+import api from "@/lib/api"
 import { BookOpen, Clock, Trophy, TrendingUp, Calendar } from "lucide-react"
 
 export default function ProgressPage() {
-  const enrolledCourses = mockCourses.filter((course) => course.progress !== undefined)
-  const totalTimeSpent = mockProgress.reduce((sum, p) => sum + p.timeSpent, 0)
-  const averageScore =
-    mockAssessments.filter((a) => a.completed && a.score).reduce((sum, a) => sum + (a.score || 0), 0) /
-    mockAssessments.filter((a) => a.completed && a.score).length
+  const [courses, setCourses] = useState<Course[]>([])
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [coursesResponse, analyticsResponse] = await Promise.all([
+          api.get("courses/courses/"),
+          api.get("analytics/student/")
+        ])
+        
+        const backendCourses = Array.isArray(coursesResponse.data) ? coursesResponse.data : coursesResponse.data.results || []
+        setCourses(backendCourses.map((c: any) => ({
+          id: c.id.toString(),
+          title: c.title,
+          description: c.description,
+          instructor: { id: c.instructor.toString(), username: "instructor", email: "", role: "instructor", createdAt: "" },
+          enrolledStudents: 0,
+          totalLessons: 0,
+          createdAt: c.created_at,
+          updatedAt: c.created_at,
+        })))
+        
+        setAnalytics(analyticsResponse.data)
+      } catch (err) {
+        console.error("Failed to fetch data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="space-y-6">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </DashboardLayout>
+    )
+  }
 
   return (
     <DashboardLayout>
@@ -26,13 +68,13 @@ export default function ProgressPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Courses Enrolled</CardTitle>
+              <CardTitle className="text-sm font-medium">Courses Available</CardTitle>
               <BookOpen className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{enrolledCourses.length}</div>
+              <div className="text-2xl font-bold">{analytics?.total_courses || 0}</div>
               <p className="text-xs text-muted-foreground">
-                {enrolledCourses.filter((c) => (c.progress || 0) === 100).length} completed
+                {analytics?.completed_courses || 0} completed
               </p>
             </CardContent>
           </Card>
@@ -42,8 +84,8 @@ export default function ProgressPage() {
               <Clock className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(totalTimeSpent / 60)}h</div>
-              <p className="text-xs text-muted-foreground">{totalTimeSpent % 60}m this week</p>
+              <div className="text-2xl font-bold">{analytics?.total_time_spent || 0} min</div>
+              <p className="text-xs text-muted-foreground">Total learning time</p>
             </CardContent>
           </Card>
           <Card>
@@ -52,8 +94,10 @@ export default function ProgressPage() {
               <Trophy className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{Math.round(averageScore)}%</div>
-              <p className="text-xs text-muted-foreground">+5% from last month</p>
+              <div className="text-2xl font-bold">{analytics?.avg_assessment_score || 0}%</div>
+              <p className="text-xs text-muted-foreground">
+                {analytics?.total_assessments || 0} assessments taken
+              </p>
             </CardContent>
           </Card>
           <Card>
@@ -62,7 +106,7 @@ export default function ProgressPage() {
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">7 days</div>
+              <div className="text-2xl font-bold">{analytics?.learning_streak || 0} days</div>
               <p className="text-xs text-muted-foreground">Keep it up!</p>
             </CardContent>
           </Card>
@@ -72,48 +116,23 @@ export default function ProgressPage() {
         <Card>
           <CardHeader>
             <CardTitle>Course Progress</CardTitle>
-            <CardDescription>Your progress in each enrolled course</CardDescription>
+            <CardDescription>Your progress in each course</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {enrolledCourses.map((course) => {
-              const courseProgress = mockProgress.find((p) => p.courseId === course.id)
-              return (
+            {courses.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No courses available yet.</p>
+            ) : (
+              courses.map((course: Course) => (
                 <div key={course.id} className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{course.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {courseProgress?.lessonsCompleted || 0} of {courseProgress?.totalLessons || course.totalLessons}{" "}
-                        lessons completed
-                      </p>
-                    </div>
-                    <Badge variant="secondary">{course.progress}%</Badge>
-                  </div>
-                  <Progress value={course.progress} className="h-2" />
-                  <div className="grid grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center space-x-2">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {courseProgress?.lessonsCompleted || 0}/{courseProgress?.totalLessons || course.totalLessons}{" "}
-                        lessons
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Trophy className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {courseProgress?.assessmentsCompleted || 0}/{courseProgress?.totalAssessments || 0} assessments
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>
-                        {Math.round((courseProgress?.timeSpent || 0) / 60)}h {(courseProgress?.timeSpent || 0) % 60}m
-                      </span>
+                      <p className="text-sm text-muted-foreground">{course.description}</p>
                     </div>
                   </div>
                 </div>
-              )
-            })}
+              ))
+            )}
           </CardContent>
         </Card>
 
