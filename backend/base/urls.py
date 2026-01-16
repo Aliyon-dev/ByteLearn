@@ -27,6 +27,7 @@ urlpatterns = [
     path('api/assessments/', include('api.assessments.urls')),
     path('api/progress/', include('api.progress.urls')),
     path('api/notifications/', include('api.notifications.urls')),
+    path('api/analytics/', include('api.analytics.urls')),
 ]
 
 if settings.DEBUG:

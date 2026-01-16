@@ -11,6 +11,11 @@ class Lesson(models.Model):
     video_file = models.FileField(upload_to='videos/', blank=True, null=True)
     duration = models.IntegerField(default=0) # in minutes
     order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
 
     def __str__(self):
         return self.title

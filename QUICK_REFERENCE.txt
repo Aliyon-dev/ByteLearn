@@ -1,0 +1,151 @@
+┌─────────────────────────────────────────────────────────────┐
+│                                                             │
+│         🚀 ByteLearn SQLite Demo - Quick Reference         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+  DEPLOY IN ONE COMMAND
+═══════════════════════════════════════════════════════════════
+
+  ./deploy-demo.sh
+
+  ⏱️  Time: ~3 minutes
+  💾 Database: SQLite (no PostgreSQL needed!)
+  📦 Containers: 2 (backend + frontend)
+
+═══════════════════════════════════════════════════════════════
+  ACCESS URLS
+═══════════════════════════════════════════════════════════════
+
+  🌐 Frontend:     http://localhost:3000
+  🔌 Backend API:  http://localhost:8000/api
+  ⚙️  Admin Panel:  http://localhost:8000/admin
+
+═══════════════════════════════════════════════════════════════
+  FIRST-TIME SETUP
+═══════════════════════════════════════════════════════════════
+
+  1. Deploy:
+     ./deploy-demo.sh
+
+  2. Create admin account:
+     docker-compose exec backend python manage.py createsuperuser
+
+  3. Access admin panel:
+     http://localhost:8000/admin
+
+  4. Create courses and content
+
+  5. Test frontend:
+     http://localhost:3000
+
+═══════════════════════════════════════════════════════════════
+  ESSENTIAL COMMANDS
+═══════════════════════════════════════════════════════════════
+
+  📊 View logs:
+     docker-compose logs -f
+
+  🔄 Restart services:
+     docker-compose restart
+
+  🛑 Stop demo:
+     docker-compose down
+
+  🗑️  Clean restart:
+     docker-compose down -v && ./deploy-demo.sh
+
+  💾 Backup database:
+     cp backend/data/db.sqlite3 backup.sqlite3
+
+  🐚 Django shell:
+     docker-compose exec backend python manage.py shell
+
+  👥 Create sample data:
+     docker-compose exec backend python create_sample_lesson.py
+
+═══════════════════════════════════════════════════════════════
+  DATABASE INFO
+═══════════════════════════════════════════════════════════════
+
+  📁 Location: backend/data/db.sqlite3
+  💾 Type: SQLite (single file)
+  🔄 Backup: Just copy the file!
+  📊 Perfect for: Demos, testing, small deployments
+
+═══════════════════════════════════════════════════════════════
+  TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+  ❌ Services won't start:
+     docker-compose down -v
+     docker-compose up --build
+
+  ❌ Port already in use:
+     sudo lsof -i :3000  # or :8000
+     sudo kill -9 <PID>
+
+  ❌ Database errors:
+     rm backend/data/db.sqlite3
+     docker-compose restart backend
+     docker-compose exec backend python manage.py migrate
+
+  ❌ Frontend can't connect:
+     Check: docker-compose logs backend
+     Test: curl http://localhost:8000/api/
+
+═══════════════════════════════════════════════════════════════
+  5-MINUTE DEMO SCRIPT
+═══════════════════════════════════════════════════════════════
+
+  1. Deploy:                    ./deploy-demo.sh
+  2. Create admin:              docker-compose exec backend python manage.py createsuperuser
+  3. Create sample data:        docker-compose exec backend python create_sample_lesson.py
+  4. Show admin panel:          http://localhost:8000/admin
+  5. Show student experience:   http://localhost:3000
+  6. Highlight features:
+     ✨ Modern UI
+     💻 Code editor
+     📊 Analytics
+     🎥 Video lessons
+     📈 Progress tracking
+
+═══════════════════════════════════════════════════════════════
+  SYSTEM REQUIREMENTS
+═══════════════════════════════════════════════════════════════
+
+  ✅ Docker & Docker Compose installed
+  ✅ Ports 3000, 8000 available
+  ✅ 2GB+ free RAM
+  ✅ 2GB+ free disk space
+
+═══════════════════════════════════════════════════════════════
+  WHY SQLite FOR DEMO?
+═══════════════════════════════════════════════════════════════
+
+  ✅ Simpler setup (no separate DB container)
+  ✅ Faster deployment (3 min vs 5 min)
+  ✅ Portable (single file database)
+  ✅ Easy backup (just copy the file)
+  ✅ Perfect for demos & small deployments
+  ✅ Less memory usage (~500MB vs ~800MB)
+
+  ⚠️  For production with 100+ users, upgrade to PostgreSQL
+      (Migration guide available in DEPLOYMENT_GUIDE.md)
+
+═══════════════════════════════════════════════════════════════
+  DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+  📖 Quick Start:       DEPLOY_NOW.md
+  📖 Full Guide:        DEPLOYMENT_GUIDE.md
+  📖 Architecture:      ARCHITECTURE.md
+  📖 Workflow:          .agent/workflows/deploy-demo.md
+
+═══════════════════════════════════════════════════════════════
+
+  Built for the Africa Sustainable Classroom Challenge
+  Version: 1.0 (SQLite Edition) | Date: 2026-01-16
+
+═══════════════════════════════════════════════════════════════

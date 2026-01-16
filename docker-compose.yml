@@ -1,31 +1,43 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:13
-    environment:
-      POSTGRES_DB: classroom
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  web:
+  backend:
     build: ./backend
+    container_name: bytelearn-backend
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/code
+      - sqlite_data:/code/data
     ports:
       - "8000:8000"
-    depends_on:
-      - db
     environment:
-      - DB_HOST=db
-      - DB_NAME=classroom
-      - DB_USER=user
-      - DB_PASS=password
+      - DEBUG=True
+      - ALLOWED_HOSTS=localhost,127.0.0.1
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000
+    networks:
+      - bytelearn-network
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: bytelearn-frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/api
+    networks:
+      - bytelearn-network
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  sqlite_data:
+
+
+networks:
+  bytelearn-network:
+    driver: bridge

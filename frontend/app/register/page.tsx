@@ -14,7 +14,7 @@ import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
 
 export default function RegisterPage() {
-  const { Register } = useAuth()
+  const { register } = useAuth()
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -38,7 +38,7 @@ export default function RegisterPage() {
 
     setIsLoading(true)
     try{
-      const response = await Register(formData);
+      const response = await register(formData);
       if(response){
         router.push('/login');
         setIsLoading(false);

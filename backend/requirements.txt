@@ -2,7 +2,9 @@ Django>=4.2
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
+django-filter
 psycopg2-binary
 pyotp
 qrcode
 pillow
+gunicorn
